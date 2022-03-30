@@ -1,9 +1,10 @@
+from json import detect_encoding
 from multiprocessing.sharedctypes import Value
 from secrets import token_bytes
 import sys
 
 _BITS = 16
-_MAX_INT_SIZE = 2 ** (_BITS-1)
+_MAX_INT_SIZE = 2 ** (_BITS-1) - 1
 print(_MAX_INT_SIZE)
 
 # soma +
@@ -25,7 +26,7 @@ def decToBin(n: int):
     # p3 = toBinary(n)
     
     # apos isso, junta tudo em um string de tamanaho _BITS
-    return ("0" if n > 0 else "1") + ("0" * (_BITS - (len(toBinary(n)))-1)) + toBinary(n)
+    return ("0" if n >= 0 else "1") + ("0" * (_BITS - (len(toBinary(n)))-1)) + toBinary(n)
 
 # funcao recursiva para converter de decimal para binario
 def bd_rec(n: str, i: int):
@@ -108,6 +109,16 @@ def sum(n1: str, n2: str, co: int, i: int) -> str:
 
     return sum(n1, n2, 1 if (int(n1[i]) + int(n2[i]) + int(co)) > 1 else 0, i-1) + t
 
+def bitshift(n, b, dir):
+    if dir == "right":
+        return ("0"*b) + n[:-b]
+    return n[b:] + ("0"*b)
+
+def remRedudant(n):
+    for i in range(_BITS-1):
+        if n[i+1] == "1":
+            return n[i+1:]
+
 def sumOperator(n1: str, n2: str):
     # operador de soma
     
@@ -156,10 +167,39 @@ def subOperator(n1, n2):
 
 
 
-def multOperator():
-    pass
+def mulOperator(n1, n2):
+    # print(f'max for {_BITS} bits multiplication,  number1 + number2 < {int(2**(_BITS/2))}')
+    
+    if n1 == "0"*_BITS or n1 == "1" + ("0"*(_BITS-1)) or n2 == "0"*_BITS or n2 == "1" + ("0"*(_BITS-1)):
+        return "0"*_BITS
+    # max is 255 * 128 (bitshiffting 7 bits to the left) = 32640
+    # from 011111111 to 0111111110000000
+    if len(remRedudant(n1)) + len(remRedudant(n2)) > _BITS:
+        raise ValueError(f"Overflow, multiplicacao de numeros com mais de {_BITS} bits")
+    
+    hold = decToBin(0)
+    # print("h: ", hold)
 
-def divOperator():
+    for i in range(_BITS):
+        if n2[_BITS-1-i] == "1":
+            # print(f"sum: {hold} and {bitshift(n1, i, 'left')} len: {len(hold)}")
+            # n1 * n2 = pos
+            # n1 * -n2 = neg
+            # -n1 * n2 = neg
+            # -n1 * -n2 = pos
+            hold = ("0" if n1[0] == n2[0] else "1") + sum(hold, bitshift(n1, i, "left"), 0, len(hold)-1)
+
+    # print("h2: ", hold)
+    # print("h2d: ", binToDec(hold))
+    return hold
+    # 11
+    # 11
+    
+    #  11
+    # 110
+    # 1001
+
+def divOperator(n1, n2):
     pass
 
 
@@ -200,7 +240,8 @@ def main():
             r = subOperator(n1, n2)
             print(f'r: {r}, {binToDec(r)}')
         elif op == "*":
-            pass
+            r = mulOperator(n1, n2)
+            print(f'r: {r}, {binToDec(r)}')
         elif op == "/":
             pass
         
@@ -235,40 +276,39 @@ def terminal_mode(n1, op, n2):
         r = subOperator(n1, n2)
         print(f'r: {r}, {binToDec(r)}')
     elif op == "*":
-        pass
+        r = mulOperator(n1, n2)
+        # print(f'r: {r}, {binToDec(r)}')
+        # n1 = bitshift(n1, 1, "left")
+        # n2 = bitshift(n2, 1, "right")
+        print(f'n1: {n1}, n2: {n2}')
+
     elif op == "/":
         pass
     
     return 1
 
-
-
-def test(n1, n2):
-    print(f'{n1} and {n2}')
+ 
+def test2(n1, n2, op):
     b1 = decToBin(n1)
     b2 = decToBin(n2)
-    nb1 = decToBin(-n1)
-    nb2 = decToBin(-n2)    
-    print(f'{b1} {b2} {nb1} {nb2}')
-    print(f'{binToDec(b1)} {binToDec(b2)} {binToDec(nb1)} {binToDec(nb2)}')
-    
-    print(f'{binToDec(sumOperator(b1, b2))}, should be {n1 + n2} \t{binToDec(sumOperator(b1, b2)) == (n1 + n2)}')
-    print(f'{binToDec(sumOperator(b1, nb2))}, should be {n1 + -n2} \t{binToDec(sumOperator(b1, nb2)) == (n1 + -n2)}')
-    print(f'{binToDec(sumOperator(nb1, b2))}, should be {-n1 + n2} \t{binToDec(sumOperator(nb1, b2)) == (-n1 + n2)}')
-    print(f'{binToDec(sumOperator(nb1, nb2))}, should be {-n1 + -n2} \t{binToDec(sumOperator(nb1, nb2)) == (-n1 + -n2)}')
-    print(f'{binToDec(sumOperator(b2, b1))}, should be {n2 + n1} \t{binToDec(sumOperator(b2, b1)) == (n2 + n1)}')
-    print(f'{binToDec(sumOperator(b2, nb1))}, should be {n2 + -n1} \t{binToDec(sumOperator(b2, nb1)) == (n2 + -n1)}')
-    print(f'{binToDec(sumOperator(nb2, b1))}, should be {-n2 + n1} \t{binToDec(sumOperator(nb2, b1)) == (-n2 + n1)}')
-    print(f'{binToDec(sumOperator(nb2, nb1))}, should be {-n2 + -n1} \t{binToDec(sumOperator(nb2, nb1)) == (-n2 + -n1)}')
-    print()
-    print(f'{binToDec(subOperator(b1, b2))}, should be {n1 - n2} \t{binToDec(subOperator(b1, b2)) == (n1 - n2)}')
-    print(f'{binToDec(subOperator(b1, nb2))}, should be {n1 - -n2} \t{binToDec(subOperator(b1, nb2)) == (n1 - -n2)}')
-    print(f'{binToDec(subOperator(nb1, b2))}, should be {-n1 - n2} \t{binToDec(subOperator(nb1, b2)) == (-n1 - n2)}')
-    print(f'{binToDec(subOperator(nb1, nb2))}, should be {-n1 - -n2} \t{binToDec(subOperator(nb1, nb2)) == (-n1 - -n2)}')
-    print(f'{binToDec(subOperator(b2, b1))}, should be {n2 - n1} \t{binToDec(subOperator(b2, b1)) == (n2 - n1)}')
-    print(f'{binToDec(subOperator(b2, nb1))}, should be {n2 - -n1} \t{binToDec(subOperator(b2, nb1)) == (n2 - -n1)}')
-    print(f'{binToDec(subOperator(nb2, b1))}, should be {-n2 - n1} \t{binToDec(subOperator(nb2, b1)) == (-n2 - n1)}')
-    print(f'{binToDec(subOperator(nb2, nb1))}, should be {-n2 - -n1} \t{binToDec(subOperator(nb2, nb1)) == (-n2 - -n1)}')
+
+
+    a, r = 0, 0
+    if op == '+':
+        a = binToDec(sumOperator(b1, b2))
+        r = n1 + n2
+    elif op == '-':
+        a = binToDec(subOperator(b1, b2))
+        r = n1 - n2
+    elif op == '*':
+        a = binToDec(mulOperator(b1, b2))
+        r = n1 * n2
+    elif op == '/':
+        # a = binToDec(divOperator(b1, b2))
+        # r = n1 / n2
+        print("not implemented")
+        return
+    print(f'{n1} {op} {n2} = {a}, should be {r} \t{a == r}')
 
 
 
@@ -285,7 +325,23 @@ if __name__ == "__main__":
         main()
     elif sys.argv[1] == "-x" and len(sys.argv) == 2:
         print("test mode")
-        n1 = 2413 # "0000100101101101"
-        n2 = 5549 # "0001010110101101" 
-        test(n1, n2)
-
+        # n1 = 2413 # "0000100101101101"
+        # n2 = 5549 # "0001010110101101" 
+        # test(n1, n2)
+        
+        n1 = 20
+        n2 = 30
+        ops = ["+", "-", "*", "/"]
+        print(n1, n2)
+        for j in range(4):
+            print(ops[j])
+            for i in range(4):
+                test2(n1*(1 if i < 2 else -1), n2*(1 if i%2 == 0 else -1), ops[j])
+            
+            #-n1 0
+            #n1 0
+            #0 -n2
+            #0 n2
+            print("with 0's")
+            for i in range(4):
+                test2(n1*(1 if i < 2 else 0)*(-1 if i%2 == 0 else 1), n2*(1 if i > 1 else 0)*(-1 if i%2 == 0 else 1), ops[j])

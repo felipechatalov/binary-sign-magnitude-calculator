@@ -1,5 +1,6 @@
 from json import detect_encoding
 from multiprocessing.sharedctypes import Value
+from re import T
 from secrets import token_bytes
 import sys
 
@@ -125,6 +126,7 @@ def sumOperator(n1: str, n2: str):
     
     # caso o sinal seja diferente, coloque o maior em valor absoluto na frente
     # e fazemos a subtracao
+    # por ser uma subtracao, nao ha overflow
     if (n1[0] != n2[0]):
         if absGreater(n1, n2):
             # 3 + -2 = pos
@@ -141,7 +143,12 @@ def sumOperator(n1: str, n2: str):
     # 3 + 2 = pos
     # -2 + -3 = neg
     # -3 + -2 = neg
-    return n1[0] + sum(n1[1:], n2[1:], 0, _BITS-2)
+    t = sum("0"+n1[1:], "0"+n2[1:], 0, _BITS-1)
+    print(len(t))
+    if t[0] == "1":
+        print("overflow")
+        return "0"*_BITS
+    return n1[0] + t[1:]
 
 
 def sub(n1, n2, co, i):
@@ -181,11 +188,17 @@ def subOperator(n1, n2):
     # trocar posicoes, se nao, positivo
     
 
+    # como eh usado a soma, tem chance do resultado dar um overflow
     if n1[0] != n2[0]:
-        # print("sum")
-        return n1[0] + sum(n1[1:], n2[1:], 0, _BITS-2)
+        
+        t = sum("0"+n1[1:], "0"+n2[1:], 0, _BITS-1)
+        if t[0] == "1":
+            print("overflow")
+            return "0"*_BITS
+        return n1[0] + t[1:]
 
     # sinais iguais
+    # subtracao de 2 positivos, ou seja, nao ha overflow
     if absGreater(n1, n2):
         return n1[0] + sub(n1[1:], n2[1:], 0, _BITS-2)
     else:
@@ -212,7 +225,6 @@ def mulOperator(n1, n2):
     print(f'{c} {a} {q} {m}')
 
     while count != 0:
-        # print(f'{c} {a} {q} {m}')
         if q[-1] == "1":
            a = sum("0" + a, "0" + m, 0, len(a))
            c, a = a[0], a[1:]
@@ -224,7 +236,7 @@ def mulOperator(n1, n2):
         count -= 1
         print(c+a+q+m)
         print(f'{c} {a} {q} {m}')
-    # print(a+q)
+    
     return ("0" if n1[0] == n2[0] else "1") + (a+q)[1:]
 
 def divOperator(n1, n2):
@@ -309,7 +321,7 @@ def terminal_mode(n1, op, n2):
     except:
         raise ValueError("Invalid input, values must be integers")
     if n1 > _MAX_INT_SIZE or n2 > _MAX_INT_SIZE:
-        raise ValueError('n1 or n2 exceeded max int size for {_BITS} bits')
+        raise ValueError(f'n1 or n2 exceeded max int size for {_BITS} bits')
 
     
     n1 = decToBin(n1)
@@ -364,6 +376,8 @@ def test2(n1, n2, op):
 
 
 if __name__ == "__main__":
+    if len(sys.argv) == 1:
+        print("modo incorreto, digite 'python3 main.py (-t/-u)'")
     if sys.argv[1] == "-t" and len(sys.argv) == 5:
         print("terminal mode")
         terminal_mode(sys.argv[2], sys.argv[3], sys.argv[4])
@@ -397,3 +411,43 @@ if __name__ == "__main__":
             for i in range(4):
                 test2(n1*(1 if i < 2 else 0)*(-1 if i%2 == 0 else 1), n2*(1 if i > 1 else 0)*(-1 if i%2 == 0 else 1), ops[j])
             print('-------------------')
+
+
+
+
+
+
+
+
+# s n
+# 0000
+
+
+# -7 -> 7
+
+# 4 + 3 = 7
+# 0100
+# 0011
+# 0111
+# 5 + 4 -> overflow
+
+# 0101 + 0100 -> 1001
+
+# 0101 4 + 5 dando overflow
+# 0100  
+# 1001
+# if (n1+n2)[0] == 1:
+#     print("overflow")
+
+
+# ideia: quando soma ou subtrai 2 numeros na funcao sum ou sub
+# passar os 16 bits, caso o resultado comece com 1 na primeira posicao
+# ouve overflow 
+
+
+
+
+# 01111111 
+# 01111111
+# 11111110
+# 2 numeros onde o 1 bit resulta como 0 e ainda assim temos o overflow

@@ -6,7 +6,6 @@ import sys
 
 _BITS = 16
 _MAX_INT_SIZE = 2 ** (_BITS-1) - 1
-print(_MAX_INT_SIZE)
 
 # soma +
 # subtracao -
@@ -42,9 +41,9 @@ def bd_rec(n: str, i: int):
     # p3 = (-1 if n[0] == "1" else 1)
 
     # por fim soma este numero com a proxima chamada recursiva com i+=1
-    t = int(n[i]) * (2**(_BITS-i-1)) * (-1 if n[0] == "1" else 1)
+    t = int(n[i]) * (2**(len(n)-i-1)) * (-1 if n[0] == "1" else 1)
     # quando chegamos no bit 1, retorna o ultimo numero sem chamada recursiva pois o ultimo bit eh de sinal
-    if (i == _BITS-1):
+    if (i == len(n)-1):
         return t
     return t + bd_rec(n, i+1)
 
@@ -127,6 +126,9 @@ def sumOperator(n1: str, n2: str):
     # caso o sinal seja diferente, coloque o maior em valor absoluto na frente
     # e fazemos a subtracao
     # por ser uma subtracao, nao ha overflow
+    
+    print(f'\t  {n1[0]} {n1[1:]}\n\t +\n\t  {n2[0]} {n2[1:]}')
+    
     if (n1[0] != n2[0]):
         if absGreater(n1, n2):
             # 3 + -2 = pos
@@ -137,16 +139,15 @@ def sumOperator(n1: str, n2: str):
             # -2 + 3 = pos            
             return n2[0] + sub(n2[1:], n1[1:], 0, _BITS-2)
 
-    # caso contrario soamos os numeros
-
+    # caso contrario somamos os numeros
     # 2 + 3 = pos
     # 3 + 2 = pos
     # -2 + -3 = neg
     # -3 + -2 = neg
     t = sum("0"+n1[1:], "0"+n2[1:], 0, _BITS-1)
-    print(len(t))
+
     if t[0] == "1":
-        print("overflow")
+        print("\n\n-OVERFLOW-")
         return "0"*_BITS
     return n1[0] + t[1:]
 
@@ -167,7 +168,7 @@ def sub(n1, n2, co, i):
     # r -> n1 ^ n2 ^ cin
     # cout -> n1 - (n2 + cin) < 0
 
-    t = str( (int(n1[i]) ^ int(n2[i]) ) ^ co)
+    t = str((int(n1[i]) ^ int(n2[i])) ^ co)
     # print(f'n1: {n1[i]} n2: {n2[i]} co: {co} t: {t}')
     if i == 0:
         return t
@@ -186,7 +187,9 @@ def subOperator(n1, n2):
     # -n1 - n2 -> sum n1 + n2 com sinal negativo sempre
     # -n1 - -n2 -> maior na frente e subtracao sem sinal, sinal negativo caso nao precise
     # trocar posicoes, se nao, positivo
-    
+
+    print(f'\t  {n1[0]} {n1[1:]}\n\t -\n\t  {n2[0]} {n2[1:]}')
+
 
     # como eh usado a soma, tem chance do resultado dar um overflow
     if n1[0] != n2[0]:
@@ -212,16 +215,18 @@ def mulOperator(n1, n2):
         return "0"*_BITS
     # max is 255 * 128 (bitshiffting 7 bits to the left) = 32640
     # from 011111111 to 0111111110000000
-    if len(remRedudant(n1)) + len(remRedudant(n2)) > _BITS:
-        raise ValueError(f"Overflow, multiplicacao de numeros com mais de {_BITS} bits")
     
-    count = _BITS/2
-    c = "0"
-    a = "00000000"
-    q = n1[-8:]
-    m = n2[-8:]
+    # if len(remRedudant(n1)) + len(remRedudant(n2)) > _BITS:
+    #     raise ValueError(f"Overflow, multiplicacao de numeros com mais de {_BITS} bits")
+    
 
-    print(f' c  a        q       m')
+    count = _BITS-1
+    c = "0"
+    a = "0"*15
+    q = n1[1:]
+    m = n2[1:]
+
+    print(f' c  a           q           m')
     print(f'{c} {a} {q} {m}')
 
     while count != 0:
@@ -231,13 +236,13 @@ def mulOperator(n1, n2):
 
         full = bitshift(c+a+q, 1, "right")
         c = full[0]
-        a = full[1:9]
-        q = full[9:]
+        a = full[1:16]
+        q = full[16:]
         count -= 1
         print(c+a+q+m)
         print(f'{c} {a} {q} {m}')
-    
-    return ("0" if n1[0] == n2[0] else "1") + (a+q)[1:]
+
+    return ("0" if n1[0] == n2[0] else "1") + (a+q)
 
 def divOperator(n1, n2):
     # D dividido por V, resultado em Q e resto em R
@@ -250,19 +255,19 @@ def divOperator(n1, n2):
         print(f'0 divided by {n2} = 0')
         return "0"*_BITS, "0"*_BITS
 
-    sign = "0" if n1[0] == n2[0] else "1"
     d = "0"+n1[1:]
     v = "0"+n2[1:]
 
+    print(f'dividendo: {d}, divisor: {v}')
+
     q = 0; r = d
-    # print(f'dividendo: {n1} {binToDec(n1)}  divisor: {n2} {binToDec(n2)}')
     while absGreater(d, v) or d == v:
+        print(f'{d}({binToDec(d)}) >= {v}({binToDec(v)}), logo:')
         d = "0"+sub(d[1:], v[1:], 0, _BITS-2)
         q += 1
+        print(f'resultado : {q} e resto : {binToDec(d)} ')
         r = d
-        print(f'n1: {n1} {binToDec(n1)}  q: {q}  r: {r} {binToDec(r)}')
-    # print(f'q: {decToBin(q)} r: {r}')
-    return sign + decToBin(q)[1:], n1[0] + r[1:]
+    return ("0" if n1[0] == n2[0] else "1") + decToBin(q)[1:], n1[0] + r[1:]
 
 
 def handleInput():
@@ -293,7 +298,7 @@ def main():
         
         print(f'binary and lenght of n1 {n1}  {len(n1)}')
         print(f'binary and lenght of n2 {n2}  {len(n2)}')
-
+        print()
         if op == "+":
             r = sumOperator(n1, n2)
             print(f'r: {r}, {binToDec(r)}')
@@ -324,22 +329,33 @@ def terminal_mode(n1, op, n2):
         raise ValueError(f'n1 or n2 exceeded max int size for {_BITS} bits')
 
     
+    print(f'numero 1: {n1}', end='')
     n1 = decToBin(n1)
+    print(f' \tbinario: {n1}')
+    print(f'numero 2: {n2}', end='')
     n2 = decToBin(n2)
-    print(f'binary and lenght of n1 {n1} {len(n1)}')
-    print(f'binary and lenght of n2 {n2} {len(n2)}')
-
+    print(f' \tbinario: {n2}')
+    print()
     if op == "+":
         r = sumOperator(n1, n2)
-        print(f'r: {r}, {binToDec(r)}')
+        print('----------------------------------------------------')
+        print(f'resultado: {r}, {binToDec(r)}')
+        print('----------------------------------------------------')
     elif op == "-":
         r = subOperator(n1, n2)
-        print(f'r: {r}, {binToDec(r)}')
+        print('----------------------------------------------------')
+        print(f'resultado: {r}, {binToDec(r)}')
+        print('----------------------------------------------------')
     elif op == "*":
         r = mulOperator(n1, n2)
+        print('----------------------------------------------------')
+        print(f'resultado: {r}, {binToDec(r)}')
+        print('----------------------------------------------------')
     elif op == "/":
         r, re = divOperator(n1, n2)
-        print(f'r: {r}, {re}  {binToDec(r), binToDec(re)}')
+        print('----------------------------------------------------')
+        print(f'resultado: {r}, resto: {re}  {binToDec(r), binToDec(re)}')
+        print('----------------------------------------------------')
     return 1
 
  
@@ -363,6 +379,7 @@ def test2(n1, n2, op):
             print(f'divisao por 0, nao entrou')
             return
         a, b = divOperator(b1, b2)
+        # print(a)
         a = binToDec(a)
         r = int(n1 / n2)
     print(f'\t{n1} {op} {n2} = {a}, should be {r}    \t{a == r}')
@@ -411,43 +428,7 @@ if __name__ == "__main__":
             for i in range(4):
                 test2(n1*(1 if i < 2 else 0)*(-1 if i%2 == 0 else 1), n2*(1 if i > 1 else 0)*(-1 if i%2 == 0 else 1), ops[j])
             print('-------------------')
+    else:
+        print('user mode')
+        main()
 
-
-
-
-
-
-
-
-# s n
-# 0000
-
-
-# -7 -> 7
-
-# 4 + 3 = 7
-# 0100
-# 0011
-# 0111
-# 5 + 4 -> overflow
-
-# 0101 + 0100 -> 1001
-
-# 0101 4 + 5 dando overflow
-# 0100  
-# 1001
-# if (n1+n2)[0] == 1:
-#     print("overflow")
-
-
-# ideia: quando soma ou subtrai 2 numeros na funcao sum ou sub
-# passar os 16 bits, caso o resultado comece com 1 na primeira posicao
-# ouve overflow 
-
-
-
-
-# 01111111 
-# 01111111
-# 11111110
-# 2 numeros onde o 1 bit resulta como 0 e ainda assim temos o overflow

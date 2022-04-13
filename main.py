@@ -1,7 +1,3 @@
-from json import detect_encoding
-from multiprocessing.sharedctypes import Value
-from re import T
-from secrets import token_bytes
 import sys
 
 _BITS = 16
@@ -52,17 +48,6 @@ def binToDec(n):
     return bd_rec(n, 1)
 
 
-# parte recursiva da funcao complement
-def c_rec(n: str, i: int):
-    
-    if i == 0:
-        return "1" if n[0] == "0" else "0"
-
-    # comecando pelo ultimo bit, de posicao _BITS -1, e indo para a esquerda
-    # invertendo todos os bits de 0 para 1 e vice-versa
-    return c_rec(n, i-1) + ("1" if n[i] == "0" else "0")
-
-
 # funcao para transformar um numero inteiro em binario
 # ex: 37 -> 10101
 def toBinary(n):
@@ -101,24 +86,23 @@ def sum(n1: str, n2: str, co: int, i: int) -> str:
 
 def absGreater(n1: str, n2: str):
     i = 1
+    # incrementa o i ate os bits serem diferentes
     while i < _BITS and n1[i] == n2[i] :
         i += 1
+    # caso i chegue ao final quer dizer que o numero eh igual
     if i == _BITS:
         return False
+    # caso o bit de n1 for 1 retorna true, pois ele eh maior, se nao, retorna false
     if n1[i] == "1":
         return True
     return False
     
 
 def bitshift(n, b, dir):
+    # retorna o numero n deslocado para a direita ou esquerda 'b' bits
     if dir == "right":
         return ("0"*b) + n[:-b]
     return n[b:] + ("0"*b)
-
-def remRedudant(n):
-    for i in range(_BITS-1):
-        if n[i+1] == "1":
-            return n[i+1:]
 
 def sumOperator(n1: str, n2: str):
     # operador de soma
@@ -147,8 +131,7 @@ def sumOperator(n1: str, n2: str):
     t = sum("0"+n1[1:], "0"+n2[1:], 0, _BITS-1)
 
     if t[0] == "1":
-        print("\n\n-OVERFLOW-")
-        return "0"*_BITS
+        raise ValueError("OVERFLOW")
     return n1[0] + t[1:]
 
 
@@ -179,7 +162,6 @@ def sub(n1, n2, co, i):
 def subOperator(n1, n2):
     # operador de subtracao
 
-    # 0101010101
 
     # n1 - n2 -> maior abs na frente e subtracao sem sinal, sinal positivo caso nao precise
     # trocar posicoes, se nao, negativo
@@ -193,11 +175,9 @@ def subOperator(n1, n2):
 
     # como eh usado a soma, tem chance do resultado dar um overflow
     if n1[0] != n2[0]:
-        
         t = sum("0"+n1[1:], "0"+n2[1:], 0, _BITS-1)
         if t[0] == "1":
-            print("overflow")
-            return "0"*_BITS
+            raise ValueError("OVERFLOW")
         return n1[0] + t[1:]
 
     # sinais iguais
@@ -209,16 +189,8 @@ def subOperator(n1, n2):
 
 
 def mulOperator(n1, n2):
-    # print(f'max for {_BITS} bits multiplication,  number1 + number2 < {int(2**(_BITS/2))}')
-    
     if n1 == "0"*_BITS or n1 == "1" + ("0"*(_BITS-1)) or n2 == "0"*_BITS or n2 == "1" + ("0"*(_BITS-1)):
         return "0"*_BITS
-    # max is 255 * 128 (bitshiffting 7 bits to the left) = 32640
-    # from 011111111 to 0111111110000000
-    
-    # if len(remRedudant(n1)) + len(remRedudant(n2)) > _BITS:
-    #     raise ValueError(f"Overflow, multiplicacao de numeros com mais de {_BITS} bits")
-    
 
     count = _BITS-1
     c = "0"
@@ -226,8 +198,8 @@ def mulOperator(n1, n2):
     q = n1[1:]
     m = n2[1:]
 
-    print(f' c  a           q           m')
-    print(f'{c} {a} {q} {m}')
+    print(f'C        A               Q              M')
+    print(f'{c}|{a}|{q} {m}')
 
     while count != 0:
         if q[-1] == "1":
@@ -239,8 +211,8 @@ def mulOperator(n1, n2):
         a = full[1:16]
         q = full[16:]
         count -= 1
-        print(c+a+q+m)
-        print(f'{c} {a} {q} {m}')
+        print(f'C|       A       |       Q              M')
+        print(f'{c}|{a}|{q} {m}')
 
     return ("0" if n1[0] == n2[0] else "1") + (a+q)
 
@@ -261,18 +233,23 @@ def divOperator(n1, n2):
     print(f'dividendo: {d}, divisor: {v}')
 
     q = 0; r = d
+    # caso d >= v subraimos v de d ate d < v, cada vez q subtraimos
+    # adicionamos 1 ao 'q' e por fim o nosso resto fica em r
     while absGreater(d, v) or d == v:
         print(f'{d}({binToDec(d)}) >= {v}({binToDec(v)}), logo:')
+        
         d = "0"+sub(d[1:], v[1:], 0, _BITS-2)
         q += 1
-        print(f'resultado : {q} e resto : {binToDec(d)} ')
+        
+        print(f'resultado : {q} e resto : {binToDec(n1[0] + d[1:])} ')
+        
         r = d
     return ("0" if n1[0] == n2[0] else "1") + decToBin(q)[1:], n1[0] + r[1:]
 
 
 def handleInput():
-    print("$ digite um numero em base decimal, seguido por uma operacao (+, -, *, /) e outro numero decimal")
-    print("$ ex: '2 * 3'")
+    print("$ digite um numero em base decimal, seguido por uma operacao (+, -, *, /) e outro numero decimal.")
+    print("$ ex: '2 * 3' ou digite 'quit' para sair")
     usr = input().split(" ")
     if usr[0] == "quit":
         return 0, "quit", 0
@@ -284,7 +261,7 @@ def handleInput():
         n1, n2 = int(usr[0]), int(usr[2])
     except:
         raise ValueError("Invalid input, values must be integers")
-    if n1 > _MAX_INT_SIZE or n2 > _MAX_INT_SIZE:
+    if abs(n1) > _MAX_INT_SIZE or abs(n2) > _MAX_INT_SIZE:
         raise ValueError('n1 or n2 exceeded max int size for {_BITS} bits')
 
     return decToBin(n1), usr[1], decToBin(n2)
@@ -294,72 +271,39 @@ def main():
     
     n1, op, n2 = handleInput()
     print(n1, op, n2)
+    
     while op != "quit":
         
-        print(f'binary and lenght of n1 {n1}  {len(n1)}')
-        print(f'binary and lenght of n2 {n2}  {len(n2)}')
+        # print(f'numero 1: {binToDec(n1)}', end='')
+        # print(f' \tbinario: {n1}')
+        # print(f'numero 2: {binToDec(n2)}', end='')
+        # print(f' \tbinario: {n2}')
         print()
         if op == "+":
             r = sumOperator(n1, n2)
-            print(f'r: {r}, {binToDec(r)}')
+            print('----------------------------------------------------')
+            print(f'resultado: {r}, ({binToDec(r)})')
+            print('----------------------------------------------------')
         elif op == "-":
             r = subOperator(n1, n2)
-            print(f'r: {r}, {binToDec(r)}')
+            print('----------------------------------------------------')
+            print(f'resultado: {r}, ({binToDec(r)})')
+            print('----------------------------------------------------')
         elif op == "*":
             r = mulOperator(n1, n2)
-            print(f'r: {r}, {binToDec(r)}')
+            print('----------------------------------------------------')
+            print(f'resultado: {r}, ({binToDec(r)})')
+            print('----------------------------------------------------')
         elif op == "/":
-            r, re = mulOperator(n1, n2)
-            print(f'r: {r}, {binToDec(r)}')
-            print(f're: {re}, {binToDec(re)}')
-        
-        n1, op, n2 = handleInput()
-    return 1
+            r, re = divOperator(n1, n2)
+            print('----------------------------------------------------')
+            print(f'resultado: {r}, resto: {re}  ({binToDec(r), binToDec(re)})')
+            print('----------------------------------------------------')
 
-def terminal_mode(n1, op, n2):
-        
-    
-    if op not in ["+", "-", "*", "/"]:
-        raise ValueError("Invalid operator, ex: +, -, *, /")
-    try:
-        n1, n2 = int(n1), int(n2)
-    except:
-        raise ValueError("Invalid input, values must be integers")
-    if n1 > _MAX_INT_SIZE or n2 > _MAX_INT_SIZE:
-        raise ValueError(f'n1 or n2 exceeded max int size for {_BITS} bits')
-
-    
-    print(f'numero 1: {n1}', end='')
-    n1 = decToBin(n1)
-    print(f' \tbinario: {n1}')
-    print(f'numero 2: {n2}', end='')
-    n2 = decToBin(n2)
-    print(f' \tbinario: {n2}')
-    print()
-    if op == "+":
-        r = sumOperator(n1, n2)
-        print('----------------------------------------------------')
-        print(f'resultado: {r}, {binToDec(r)}')
-        print('----------------------------------------------------')
-    elif op == "-":
-        r = subOperator(n1, n2)
-        print('----------------------------------------------------')
-        print(f'resultado: {r}, {binToDec(r)}')
-        print('----------------------------------------------------')
-    elif op == "*":
-        r = mulOperator(n1, n2)
-        print('----------------------------------------------------')
-        print(f'resultado: {r}, {binToDec(r)}')
-        print('----------------------------------------------------')
-    elif op == "/":
-        r, re = divOperator(n1, n2)
-        print('----------------------------------------------------')
-        print(f'resultado: {r}, resto: {re}  {binToDec(r), binToDec(re)}')
-        print('----------------------------------------------------')
-    return 1
+        n1, op, n2 = handleInput()    
 
  
-def test2(n1, n2, op):
+def test(n1, n2, op):
     b1 = decToBin(n1)
     b2 = decToBin(n2)
 
@@ -393,20 +337,10 @@ def test2(n1, n2, op):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) == 1:
-        print("modo incorreto, digite 'python3 main.py (-t/-u)'")
-    if sys.argv[1] == "-t" and len(sys.argv) == 5:
-        print("terminal mode")
-        terminal_mode(sys.argv[2], sys.argv[3], sys.argv[4])
-    elif sys.argv[1] == "-u" and len(sys.argv) == 2:
-        print("user mode")
-        main()
-    elif sys.argv[1] == "-x" and len(sys.argv) == 2:
+    if len(sys.argv) == 2 and sys.argv[1] == "-x":
         print("test mode")
         # n1 = 2413 # "0000100101101101"
         # n2 = 5549 # "0001010110101101" 
-        # test(n1, n2)
-        
         n1 = 2
         n2 = 3
         ops = ["+", "-", "*", "/"]
@@ -416,9 +350,9 @@ if __name__ == "__main__":
 
             print('-------------------')
             for i in range(4):
-                test2(n1*(1 if i < 2 else -1), n2*(1 if i%2 == 0 else -1), ops[j])
+                test(n1*(1 if i < 2 else -1), n2*(1 if i%2 == 0 else -1), ops[j])
             for i in range(4):
-                test2(n2*(1 if i < 2 else -1), n1*(1 if i%2 == 0 else -1), ops[j])
+                test(n2*(1 if i < 2 else -1), n1*(1 if i%2 == 0 else -1), ops[j])
             
             #-n1 0
             #n1 0
@@ -426,7 +360,7 @@ if __name__ == "__main__":
             #0 n2
             print("with 0's")
             for i in range(4):
-                test2(n1*(1 if i < 2 else 0)*(-1 if i%2 == 0 else 1), n2*(1 if i > 1 else 0)*(-1 if i%2 == 0 else 1), ops[j])
+                test(n1*(1 if i < 2 else 0)*(-1 if i%2 == 0 else 1), n2*(1 if i > 1 else 0)*(-1 if i%2 == 0 else 1), ops[j])
             print('-------------------')
     else:
         print('user mode')

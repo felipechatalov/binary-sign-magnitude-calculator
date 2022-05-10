@@ -1,0 +1,11 @@
+O codigo foi escrito e testado usando a versao 3.9.6 do Python
+Para executar o codigo basta digitar 'python main.py'
+
+Apos a execucao o programa perguntara qual conta deseja realizar
+para dar entrada em uma operacao basta digitar um numero, seguido
+de uma operacao (+ , -, *, /) e outro numero, como no exemplo
+'3 + 4', caso queira um numero negativo basta colocar antes do numero 
+q deseja, como: '-5 / 7', tudo em 1 linha, apos isso o programa ira
+calcular e mostrar os passos para o usuario e em seguida pedira
+outra operacao, que vc pode colocar outra conta ou digitar 'quit' para 
+fechar o programa

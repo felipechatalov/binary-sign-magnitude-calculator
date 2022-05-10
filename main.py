@@ -59,28 +59,6 @@ def toBinary(n):
     # retorna a string hold invertida
     return hold[::-1]
 
-# faz a soma de 2 numeros binarios, excluindo sinal
-def sum(n1: str, n2: str, co: int, i: int) -> str:
-    # t recebe a soma de n1 e n2 e o co(carry out da soma anterior)
-    # para a soma eh usado 2 portas XOR
-    # print(n1, n2)
-    t = str(int(n1[i]) ^ int(n2[i]) ^ int(co))
-    
-    # 0 ^ 0 = 0
-    # 0 ^ 1 = 1
-    # 1 ^ 0 = 1
-    # 1 ^ 1 = 0
-    if i == 0:
-        return t
-    
-    # o terceiro parametro (carry out) precisa ser 1 se 2 ou mais dos numeros forem 1, caso contrario v recebe 0    
-    # 1 1 0 OR 1 0 1 OR 0 1 1 OR 1 1 1
-   
-
-    # v = 1 if int(n1[i]) == 1 and int(n2[i]) == 1 and co == 0 or int(n1[i]) == 1 and int(n2[i]) == 0 and co == 1 or int(n1[i]) == 0 and int(n2[i]) == 1 and co == 1 or int(n1[i]) == 1 and int(n2[i]) == 1 and co == 1 else 0
-    # por fim retorna a soma de i-1 + a iteracao atual
-
-    return sum(n1, n2, 1 if (int(n1[i]) + int(n2[i]) + int(co)) > 1 else 0, i-1) + t
 
 # verifica se n1 é maior que n2 em valor absoluto
 def absGreater(n1: str, n2: str):
@@ -131,6 +109,27 @@ def sumOperator(n1: str, n2: str):
     if t[0] == "1":
         raise ValueError("OVERFLOW")
     return n1[0] + t[1:]
+def sum(n1: str, n2: str, co: int, i: int) -> str:
+    # t recebe a soma de n1 e n2 e o co(carry out da soma anterior)
+    # para a soma eh usado 2 portas XOR
+    # print(n1, n2)
+    t = str(int(n1[i]) ^ int(n2[i]) ^ int(co))
+    
+    # 0 ^ 0 = 0
+    # 0 ^ 1 = 1
+    # 1 ^ 0 = 1
+    # 1 ^ 1 = 0
+    if i == 0:
+        return t
+    
+    # o terceiro parametro (carry out) precisa ser 1 se 2 ou mais dos numeros forem 1, caso contrario v recebe 0    
+    # 1 1 0 OR 1 0 1 OR 0 1 1 OR 1 1 1
+   
+
+    # v = 1 if int(n1[i]) == 1 and int(n2[i]) == 1 and co == 0 or int(n1[i]) == 1 and int(n2[i]) == 0 and co == 1 or int(n1[i]) == 0 and int(n2[i]) == 1 and co == 1 or int(n1[i]) == 1 and int(n2[i]) == 1 and co == 1 else 0
+    # por fim retorna a soma de i-1 + a iteracao atual
+
+    return sum(n1, n2, 1 if (int(n1[i]) + int(n2[i]) + int(co)) > 1 else 0, i-1) + t
 def sub(n1, n2, co, i):
     # equacao de subtracao de numeros binarios
 
@@ -263,11 +262,7 @@ def main():
     print(n1, op, n2)
     
     while op != "quit":
-        
-        # print(f'numero 1: {binToDec(n1)}', end='')
-        # print(f' \tbinario: {n1}')
-        # print(f'numero 2: {binToDec(n2)}', end='')
-        # print(f' \tbinario: {n2}')
+
         print()
         if op == "+":
             r = sumOperator(n1, n2)
@@ -289,7 +284,9 @@ def main():
             print('----------------------------------------------------')
             print(f'resultado: {r}, resto: {re}  ({binToDec(r), binToDec(re)})')
             print('----------------------------------------------------')
-
+        else:
+            print(f'Operancao nao reconhecida: {op}')
+            print(f'Por favor digite uma operacao valida: +, -, *, /')
         n1, op, n2 = handleInput()    
 
 def test(n1, n2, op):
@@ -311,15 +308,46 @@ def test(n1, n2, op):
             print(f'divisao por 0, nao entrou')
             return
         a, b = divOperator(b1, b2)
-        # print(a)
         a = binToDec(a)
         r = int(n1 / n2)
-    print(f'\t{n1} {op} {n2} = {a}, should be {r}    \t{a == r}')
+    print(f'\t{n1} {op} {n2} = {a}, deve ser: {r}    \t{a == r}')
     if op == '/':
-        print(f'\treminder = {binToDec(b)} \t\t')
+        print(f'\tresto = {binToDec(b)} \t\t')
     return
+def callTest():
+    n1, n2 = 2, 3
+    op = ["+", "-", "*", "/"]
 
+    for i in range(4):
+        # para menor primeiro
+        # + +
+        # + -
+        # - +
+        # - -
+        test(n1 * (-1 if i > 1 else 1) , \
+            n2 * (-1 if i % 2 == 1 else 1) , \
+            op[i])
+
+        # para maior primeiro
+        test(n2 * (-1 if i > 1 else 1) , \
+            n1 * (-1 if i % 2 == 1 else 1) , \
+            op[i])
+
+        # para igual
+        test(n1 * (-1 if i > 1 else 1) , \
+            n1 * (-1 if i % 2 == 1 else 1) , \
+            op[i])
+    test(32767, -32767, '+')
+    test(32767, 32767, '-')
+    test(32767, -32767, '*')
+    test(32767, -32767, '/')
+
+    test(32767, 0, '+')
+    test(32767, 0, '-')
+    test(32767, 0, '*')
+    test(32767, 0, '/')
 
 
 if __name__ == "__main__":
     main()
+    # callTest()

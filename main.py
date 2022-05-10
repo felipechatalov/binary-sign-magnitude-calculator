@@ -1,5 +1,3 @@
-import sys
-
 _BITS = 16
 _MAX_INT_SIZE = 2 ** (_BITS-1) - 1
 
@@ -84,6 +82,7 @@ def sum(n1: str, n2: str, co: int, i: int) -> str:
 
     return sum(n1, n2, 1 if (int(n1[i]) + int(n2[i]) + int(co)) > 1 else 0, i-1) + t
 
+# verifica se n1 é maior que n2 em valor absoluto
 def absGreater(n1: str, n2: str):
     i = 1
     # incrementa o i ate os bits serem diferentes
@@ -97,7 +96,6 @@ def absGreater(n1: str, n2: str):
         return True
     return False
     
-
 def bitshift(n, b, dir):
     # retorna o numero n deslocado para a direita ou esquerda 'b' bits
     if dir == "right":
@@ -133,20 +131,18 @@ def sumOperator(n1: str, n2: str):
     if t[0] == "1":
         raise ValueError("OVERFLOW")
     return n1[0] + t[1:]
-
-
 def sub(n1, n2, co, i):
     # equacao de subtracao de numeros binarios
 
-    # n1  n2 cin cout/r 
-    # 0 - 0 - 0 = 0   0
-    # 0 - 0 - 1 = 1   1    
-    # 0 - 1 - 0 = 1   1       
-    # 0 - 1 - 1 = 1   0     
-    # 1 - 0 - 0 = 0   1    
-    # 1 - 0 - 1 = 0   0
-    # 1 - 1 - 0 = 0   0
-    # 1 - 1 - 1 = 1   1  
+    # n1  n2 cin  cout / r 
+    # 0 - 0 - 0   = 0    0
+    # 0 - 0 - 1   = 1    1    
+    # 0 - 1 - 0   = 1    1       
+    # 0 - 1 - 1   = 1    0     
+    # 1 - 0 - 0   = 0    1    
+    # 1 - 0 - 1   = 0    0
+    # 1 - 1 - 0   = 0    0
+    # 1 - 1 - 1   = 1    1  
     
     # r -> n1 ^ n2 ^ cin
     # cout -> n1 - (n2 + cin) < 0
@@ -156,9 +152,6 @@ def sub(n1, n2, co, i):
     if i == 0:
         return t
     return sub(n1, n2, 1 if (int(n1[i]) - (int(n2[i]) + co)) < 0 else 0, i-1) + t
-
-     
-
 def subOperator(n1, n2):
     # operador de subtracao
 
@@ -185,9 +178,7 @@ def subOperator(n1, n2):
     if absGreater(n1, n2):
         return n1[0] + sub(n1[1:], n2[1:], 0, _BITS-2)
     else:
-        return ("0" if n2[0] == "1" else "1") + sub(n2[1:], n1[1:], 0, _BITS-2)
-
-
+        return ("0" if n1[0] == "1" else "1") + sub(n2[1:], n1[1:], 0, _BITS-2)
 def mulOperator(n1, n2):
     if n1 == "0"*_BITS or n1 == "1" + ("0"*(_BITS-1)) or n2 == "0"*_BITS or n2 == "1" + ("0"*(_BITS-1)):
         return "0"*_BITS
@@ -211,11 +202,10 @@ def mulOperator(n1, n2):
         a = full[1:16]
         q = full[16:]
         count -= 1
-        print(f'C|       A       |       Q              M')
+        # print(f'C|       A       |       Q              M')
         print(f'{c}|{a}|{q} {m}')
 
     return ("0" if n1[0] == n2[0] else "1") + (a+q)
-
 def divOperator(n1, n2):
     # D dividido por V, resultado em Q e resto em R
     # d = n1
@@ -302,11 +292,9 @@ def main():
 
         n1, op, n2 = handleInput()    
 
- 
 def test(n1, n2, op):
     b1 = decToBin(n1)
     b2 = decToBin(n2)
-
 
     a, r = 0, 0
     if op == '+':
@@ -333,36 +321,5 @@ def test(n1, n2, op):
 
 
 
-
-
-
 if __name__ == "__main__":
-    if len(sys.argv) == 2 and sys.argv[1] == "-x":
-        print("test mode")
-        # n1 = 2413 # "0000100101101101"
-        # n2 = 5549 # "0001010110101101" 
-        n1 = 2
-        n2 = 3
-        ops = ["+", "-", "*", "/"]
-        print(n1, n2)
-        for j in range(4):
-            print(ops[j])
-
-            print('-------------------')
-            for i in range(4):
-                test(n1*(1 if i < 2 else -1), n2*(1 if i%2 == 0 else -1), ops[j])
-            for i in range(4):
-                test(n2*(1 if i < 2 else -1), n1*(1 if i%2 == 0 else -1), ops[j])
-            
-            #-n1 0
-            #n1 0
-            #0 -n2
-            #0 n2
-            print("with 0's")
-            for i in range(4):
-                test(n1*(1 if i < 2 else 0)*(-1 if i%2 == 0 else 1), n2*(1 if i > 1 else 0)*(-1 if i%2 == 0 else 1), ops[j])
-            print('-------------------')
-    else:
-        print('user mode')
-        main()
-
+    main()
